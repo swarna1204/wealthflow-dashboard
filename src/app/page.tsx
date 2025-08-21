@@ -2,6 +2,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -15,37 +16,10 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-
-// Mock data
-const spendingData = [
-  { month: 'Jan', spending: 2400, income: 4800 },
-  { month: 'Feb', spending: 2200, income: 4800 },
-  { month: 'Mar', spending: 2800, income: 4800 },
-  { month: 'Apr', spending: 2400, income: 4800 },
-  { month: 'May', spending: 2600, income: 4800 },
-  { month: 'Jun', spending: 2847, income: 4800 },
-];
-
-const categoryData = [
-  { name: 'Food & Dining', value: 28, color: '#FF6B6B' },
-  { name: 'Transportation', value: 22, color: '#4ECDC4' },
-  { name: 'Shopping', value: 18, color: '#45B7D1' },
-  { name: 'Entertainment', value: 15, color: '#FFA726' },
-  { name: 'Bills & Utilities', value: 17, color: '#AB47BC' },
-];
-
-const recentTransactions = [
-  { id: 1, description: 'Grocery Store', amount: -85.50, category: 'Food', date: '2 hours ago', type: 'expense' },
-  { id: 2, description: 'Salary Deposit', amount: 4800.00, category: 'Income', date: '1 day ago', type: 'income' },
-  { id: 3, description: 'Netflix Subscription', amount: -15.99, category: 'Entertainment', date: '2 days ago', type: 'expense' },
-  { id: 4, description: 'Gas Station', amount: -65.00, category: 'Transportation', date: '3 days ago', type: 'expense' },
-];
-
-const goals = [
-  { id: 1, name: 'Emergency Fund', target: 10000, current: 6700, color: 'bg-green-500' },
-  { id: 2, name: 'Vacation', target: 5000, current: 2300, color: 'bg-blue-500' },
-  { id: 3, name: 'New Car', target: 25000, current: 8500, color: 'bg-purple-500' },
-];
+import { useTransactionStore } from '@/store/useTransactionStore';
+import { useBudgetStore } from '@/store/useBudgetStore';
+import { useGoalStore } from '@/store/useGoalStore';
+import { useUserStore } from '@/store/useUserStore';
 
 const StatCard = ({ title, value, change, changeType, icon: Icon, color }: any) => (
   <motion.div
@@ -76,13 +50,160 @@ const StatCard = ({ title, value, change, changeType, icon: Icon, color }: any) 
 );
 
 export default function Dashboard() {
+  const { transactions, getTotalBalance, getMonthlySpending, getMonthlyIncome } = useTransactionStore();
+  const { budgets } = useBudgetStore();
+  const { goals } = useGoalStore();
+  const { user } = useUserStore();
+
+  // Calculate dashboard data
+  const dashboardData = useMemo(() => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+
+    // Current month data
+    const currentMonthSpending = getMonthlySpending(currentYear, currentMonth);
+    const currentMonthIncome = getMonthlyIncome(currentYear, currentMonth);
+    
+    // Last month data for comparison
+    const lastMonthSpending = getMonthlySpending(lastMonthYear, lastMonth);
+    const lastMonthIncome = getMonthlyIncome(lastMonthYear, lastMonth);
+
+    // Calculate changes
+    const spendingChange = lastMonthSpending > 0 
+      ? ((currentMonthSpending - lastMonthSpending) / lastMonthSpending * 100).toFixed(1)
+      : '0';
+    
+    const incomeChange = lastMonthIncome > 0
+      ? ((currentMonthIncome - lastMonthIncome) / lastMonthIncome * 100).toFixed(1)
+      : '0';
+
+    // Total balance
+    const totalBalance = getTotalBalance();
+
+    // Investment calculation (mock for now)
+    const investments = 8923.45;
+    const investmentChange = '+5.2';
+
+    // Goals data
+    const primaryGoal = goals.find(g => g.name === 'Emergency Fund');
+    const goalProgress = primaryGoal ? (primaryGoal.current / primaryGoal.target * 100).toFixed(0) : '0';
+
+    return {
+      totalBalance,
+      currentMonthSpending,
+      spendingChange,
+      investments,
+      investmentChange,
+      goalProgress,
+      primaryGoal
+    };
+  }, [transactions, goals, getMonthlySpending, getMonthlyIncome, getTotalBalance]);
+
+  // Spending chart data (last 6 months)
+  const spendingChartData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
+    const currentDate = new Date();
+    const data = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentDate);
+      date.setMonth(date.getMonth() - i);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      data.push({
+        month: months[date.getMonth()],
+        spending: getMonthlySpending(year, month),
+        income: getMonthlyIncome(year, month) || 4800
+      });
+    }
+
+    return data;
+  }, [transactions, getMonthlySpending, getMonthlyIncome]);
+
+  // Category breakdown data
+  const categoryData = useMemo(() => {
+    const categoryTotals: Record<string, number> = {};
+    
+    // Get current month transactions
+    const currentDate = new Date();
+    const currentMonthTransactions = transactions.filter(t => {
+      const transactionDate = new Date(t.date);
+      return transactionDate.getMonth() === currentDate.getMonth() &&
+             transactionDate.getFullYear() === currentDate.getFullYear() &&
+             t.type === 'expense';
+    });
+
+    // Calculate totals by category
+    currentMonthTransactions.forEach(transaction => {
+      categoryTotals[transaction.category] = 
+        (categoryTotals[transaction.category] || 0) + Math.abs(transaction.amount);
+    });
+
+    // Convert to chart format
+    const total = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+    
+    return Object.entries(categoryTotals)
+      .map(([category, amount]) => ({
+        name: category,
+        value: Math.round((amount / total) * 100),
+        color: budgets.find(b => b.category === category)?.color || '#8B5CF6'
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5); // Top 5 categories
+  }, [transactions, budgets]);
+
+  // Recent transactions (last 5)
+  const recentTransactions = useMemo(() => {
+    return transactions
+      .slice()
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 4);
+  }, [transactions]);
+
+  // Active goals (top 3)
+  const activeGoals = useMemo(() => {
+    return goals
+      .slice()
+      .sort((a, b) => {
+        const progressA = (a.current / a.target) * 100;
+        const progressB = (b.current / b.target) * 100;
+        return progressB - progressA;
+      })
+      .slice(0, 3);
+  }, [goals]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome back, Alex!</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome back, {user?.name || 'Alex'}!
+            </h1>
             <p className="text-gray-600 mt-1">Here's what's happening with your finances today.</p>
           </div>
           <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-lg transition-all duration-300 w-full sm:w-auto">
@@ -95,7 +216,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Total Balance"
-            value="$12,345.67"
+            value={formatCurrency(dashboardData.totalBalance)}
             change="+2.5%"
             changeType="positive"
             icon={DollarSign}
@@ -103,24 +224,24 @@ export default function Dashboard() {
           />
           <StatCard
             title="Monthly Spending"
-            value="$2,847.30"
-            change="+12%"
-            changeType="negative"
+            value={formatCurrency(dashboardData.currentMonthSpending)}
+            change={`${dashboardData.spendingChange}%`}
+            changeType={parseFloat(dashboardData.spendingChange) > 0 ? 'negative' : 'positive'}
             icon={CreditCard}
             color="bg-gradient-to-br from-red-500 to-red-600"
           />
           <StatCard
             title="Investments"
-            value="$8,923.45"
-            change="+5.2%"
+            value={formatCurrency(dashboardData.investments)}
+            change={`${dashboardData.investmentChange}%`}
             changeType="positive"
             icon={TrendingUp}
             color="bg-gradient-to-br from-blue-500 to-blue-600"
           />
           <StatCard
             title="Savings Goal"
-            value="67%"
-            change="$6,700 of $10,000"
+            value={`${dashboardData.goalProgress}%`}
+            change={`${formatCurrency(dashboardData.primaryGoal?.current || 0)} of ${formatCurrency(dashboardData.primaryGoal?.target || 10000)}`}
             changeType="positive"
             icon={Target}
             color="bg-gradient-to-br from-purple-500 to-purple-600"
@@ -142,7 +263,7 @@ export default function Dashboard() {
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={spendingData}>
+                <AreaChart data={spendingChartData}>
                   <defs>
                     <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
@@ -244,14 +365,14 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-6">
-              {goals.map((goal) => {
+              {activeGoals.map((goal) => {
                 const progress = (goal.current / goal.target) * 100;
                 return (
                   <div key={goal.id} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-gray-900">{goal.name}</h4>
                       <span className="text-sm text-gray-600">
-                        ${goal.current.toLocaleString()} / ${goal.target.toLocaleString()}
+                        {formatCurrency(goal.current)} / {formatCurrency(goal.target)}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -259,13 +380,14 @@ export default function Dashboard() {
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{ duration: 1, delay: 0.2 }}
-                        className={`h-2 rounded-full ${goal.color}`}
+                        className="h-2 rounded-full"
+                        style={{ backgroundColor: goal.color }}
                       ></motion.div>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">{Math.round(progress)}% complete</span>
                       <span className="text-gray-600">
-                        ${(goal.target - goal.current).toLocaleString()} remaining
+                        {formatCurrency(goal.target - goal.current)} remaining
                       </span>
                     </div>
                   </div>
@@ -286,7 +408,7 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {recentTransactions.map((transaction, index) => (
+              {recentTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
@@ -308,7 +430,7 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
                         <span>{transaction.category}</span>
                         <span>•</span>
-                        <span>{transaction.date}</span>
+                        <span>{formatDate(transaction.date)}</span>
                       </div>
                     </div>
                   </div>
@@ -318,7 +440,7 @@ export default function Dashboard() {
                       : 'text-red-600'
                   }`}>
                     <span className="font-semibold">
-                      {transaction.type === 'income' ? '+' : ''}${Math.abs(transaction.amount).toFixed(2)}
+                      {transaction.type === 'income' ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
                     </span>
                   </div>
                 </div>
