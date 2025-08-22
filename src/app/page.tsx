@@ -1,8 +1,8 @@
 // app/page.tsx
 'use client';
 
-import { motion } from 'framer-motion';
-import { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo, useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import TransactionForm from '@/components/forms/TransactionForm';
 import { useTransactionStore } from '@/store/useTransactionStore';
 import { useBudgetStore } from '@/store/useBudgetStore';
 import { useGoalStore } from '@/store/useGoalStore';
@@ -54,6 +55,9 @@ export default function Dashboard() {
   const { budgets } = useBudgetStore();
   const { goals } = useGoalStore();
   const { user } = useUserStore();
+  
+  // Transaction form state
+  const [showTransactionForm, setShowTransactionForm] = useState(false);
 
   // Calculate dashboard data
   const dashboardData = useMemo(() => {
@@ -195,6 +199,11 @@ export default function Dashboard() {
     return date.toLocaleDateString();
   };
 
+  const handleTransactionSuccess = () => {
+    // Transaction added successfully - data will automatically update via store
+    console.log('Transaction added successfully!');
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -206,7 +215,10 @@ export default function Dashboard() {
             </h1>
             <p className="text-gray-600 mt-1">Here's what's happening with your finances today.</p>
           </div>
-          <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-lg transition-all duration-300 w-full sm:w-auto">
+          <button 
+            onClick={() => setShowTransactionForm(true)}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:shadow-lg transition-all duration-300 w-full sm:w-auto"
+          >
             <Plus className="w-5 h-5" />
             <span>Add Transaction</span>
           </button>
@@ -459,8 +471,11 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-              <button className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
-                Create Budget
+              <button 
+                onClick={() => setShowTransactionForm(true)}
+                className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors"
+              >
+                Add Transaction
               </button>
               <button className="border-2 border-white text-white px-6 py-3 rounded-xl font-semibold hover:bg-white hover:text-blue-600 transition-colors">
                 Set New Goal
@@ -469,6 +484,16 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Transaction Form Modal */}
+      <AnimatePresence>
+        {showTransactionForm && (
+          <TransactionForm
+            onClose={() => setShowTransactionForm(false)}
+            onSuccess={handleTransactionSuccess}
+          />
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }
