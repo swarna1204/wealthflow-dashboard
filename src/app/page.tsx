@@ -17,6 +17,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TransactionForm from '@/components/forms/TransactionForm';
+import BudgetForm from '@/components/forms/BudgetForm';
 import { useTransactionStore } from '@/store/useTransactionStore';
 import { useBudgetStore } from '@/store/useBudgetStore';
 import { useGoalStore } from '@/store/useGoalStore';
@@ -56,8 +57,9 @@ export default function Dashboard() {
   const { goals } = useGoalStore();
   const { user } = useUserStore();
   
-  // Transaction form state
+  // Form states
   const [showTransactionForm, setShowTransactionForm] = useState(false);
+  const [showBudgetForm, setShowBudgetForm] = useState(false);
 
   // Calculate dashboard data
   const dashboardData = useMemo(() => {
@@ -200,8 +202,11 @@ export default function Dashboard() {
   };
 
   const handleTransactionSuccess = () => {
-    // Transaction added successfully - data will automatically update via store
     console.log('Transaction added successfully!');
+  };
+
+  const handleBudgetSuccess = () => {
+    console.log('Budget created successfully!');
   };
 
   return (
@@ -472,10 +477,10 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
               <button 
-                onClick={() => setShowTransactionForm(true)}
+                onClick={() => setShowBudgetForm(true)}
                 className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors"
               >
-                Add Transaction
+                Create Budget
               </button>
               <button className="border-2 border-white text-white px-6 py-3 rounded-xl font-semibold hover:bg-white hover:text-blue-600 transition-colors">
                 Set New Goal
@@ -491,6 +496,16 @@ export default function Dashboard() {
           <TransactionForm
             onClose={() => setShowTransactionForm(false)}
             onSuccess={handleTransactionSuccess}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Budget Form Modal */}
+      <AnimatePresence>
+        {showBudgetForm && (
+          <BudgetForm
+            onClose={() => setShowBudgetForm(false)}
+            onSuccess={handleBudgetSuccess}
           />
         )}
       </AnimatePresence>
