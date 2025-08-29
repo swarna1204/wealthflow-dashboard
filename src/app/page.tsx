@@ -198,7 +198,13 @@ export default function Dashboard() {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return '1 day ago';
     if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
+    
+    // Use consistent UTC formatting to prevent hydration errors
+    return date.toLocaleDateString('en-US', { 
+      timeZone: 'UTC',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const handleTransactionSuccess = () => {
