@@ -94,7 +94,7 @@ export default function Dashboard() {
     const investmentChange = '+5.2';
 
     // Goals data
-    const primaryGoal = goals.find(g => g.name === 'Emergency Fund');
+    const primaryGoal = goals.find(g => g.name === 'Emergency Fund') || goals[0];
     const goalProgress = primaryGoal ? (primaryGoal.current / primaryGoal.target * 100).toFixed(0) : '0';
 
     return {
@@ -130,7 +130,7 @@ export default function Dashboard() {
     return data;
   }, [transactions, getMonthlySpending, getMonthlyIncome]);
 
-  // Category breakdown data
+  // FIXED Category breakdown data
   const categoryData = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
     
@@ -143,6 +143,11 @@ export default function Dashboard() {
              t.type === 'expense';
     });
 
+    // If no transactions, return null to show fallback data
+    if (currentMonthTransactions.length === 0) {
+      return null;
+    }
+
     // Calculate totals by category
     currentMonthTransactions.forEach(transaction => {
       categoryTotals[transaction.category] = 
@@ -152,14 +157,23 @@ export default function Dashboard() {
     // Convert to chart format
     const total = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
     
+    if (total === 0) return null;
+
+    // Default colors for categories
+    const defaultColors = [
+      '#EF4444', '#06B6D4', '#3B82F6', '#8B5CF6', '#10B981', 
+      '#F59E0B', '#EC4899', '#84CC16', '#F97316', '#6B7280'
+    ];
+    
     return Object.entries(categoryTotals)
-      .map(([category, amount]) => ({
+      .map(([category, amount], index) => ({
         name: category,
         value: Math.round((amount / total) * 100),
-        color: budgets.find(b => b.category === category)?.color || '#8B5CF6'
+        color: budgets.find(b => b.category === category)?.color || defaultColors[index % defaultColors.length]
       }))
+      .filter(item => item.value > 0) // Only include categories with spending
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Top 5 categories
+      .slice(0, 6); // Top 6 categories
   }, [transactions, budgets]);
 
   // Recent transactions (last 5)
@@ -214,6 +228,18 @@ export default function Dashboard() {
   const handleBudgetSuccess = () => {
     console.log('Budget created successfully!');
   };
+
+  // Mock category data for fallback
+  const mockCategoryData = [
+    { name: 'Food & Dining', value: 28, color: '#EF4444' },
+    { name: 'Transportation', value: 22, color: '#06B6D4' },
+    { name: 'Shopping', value: 18, color: '#3B82F6' },
+    { name: 'Entertainment', value: 12, color: '#8B5CF6' },
+    { name: 'Healthcare', value: 10, color: '#10B981' },
+    { name: 'Other', value: 10, color: '#6B7280' }
+  ];
+
+  const displayCategoryData = categoryData || mockCategoryData;
 
   return (
     <DashboardLayout>
@@ -329,7 +355,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Spending Categories */}
+          {/* FIXED Spending Categories */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -337,28 +363,44 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-600">This month's breakdown</p>
               </div>
             </div>
+            
             <div className="h-48 mb-6">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={displayCategoryData}
                     cx="50%"
                     cy="50%"
                     innerRadius={40}
                     outerRadius={80}
-                    paddingAngle={5}
+                    paddingAngle={2}
                     dataKey="value"
+                    animationBegin={0}
+                    animationDuration={800}
                   >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {displayCategoryData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                      />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    formatter={(value) => [`${value}%`, 'Percentage']}
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: 'none', 
+                      borderRadius: '12px', 
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
+            
+            {/* Legend */}
             <div className="space-y-3">
-              {categoryData.map((category, index) => (
+              {displayCategoryData.map((category, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div 
@@ -388,7 +430,7 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-6">
-              {activeGoals.map((goal) => {
+              {activeGoals.length > 0 ? activeGoals.map((goal) => {
                 const progress = (goal.current / goal.target) * 100;
                 return (
                   <div key={goal.id} className="space-y-3">
@@ -415,7 +457,22 @@ export default function Dashboard() {
                     </div>
                   </div>
                 );
-              })}
+              }) : (
+                // Fallback when no goals
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-gray-900">MacBook Pro</h4>
+                    <span className="text-sm text-gray-600">$1,850 / $2,500</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '74%' }}></div>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">74% complete</span>
+                    <span className="text-gray-600">$650 remaining</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -431,7 +488,7 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {recentTransactions.map((transaction) => (
+              {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
@@ -467,7 +524,27 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </div>
-              ))}
+              )) : (
+                // Fallback when no transactions
+                <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-100 text-red-600">
+                      <ArrowDownRight className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Grocery Store - Weekly Shopping</h4>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>Food & Dining</span>
+                        <span>•</span>
+                        <span>Aug 21</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right text-red-600">
+                    <span className="font-semibold">$85.50</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
