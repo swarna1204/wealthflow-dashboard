@@ -1,4 +1,3 @@
-// components/layout/DashboardLayout.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,9 +29,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-      {/* Main Content Area - Always takes remaining space */}
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-        {/* Header */}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ONLY Header - The one you want to keep */}
         <header className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 flex-shrink-0">
           <div className="flex items-center justify-between h-16">
             {/* Left side */}
@@ -101,7 +100,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Main Content - Scrollable */}
+        {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             <motion.div

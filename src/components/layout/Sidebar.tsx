@@ -1,4 +1,4 @@
-// components/layout/Sidebar.tsx
+// components/layout/Sidebar.tsx - FINAL VERSION
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +15,7 @@ import {
   LogOut,
   X,
   TrendingUp,
-  Wallet
+  Wallet  // Added Wallet icon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -100,9 +100,10 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         shadow-xl lg:shadow-none flex-shrink-0
       `}>
-        {/* Header */}
+        {/* Header - CHANGED: Wallet icon instead of folder icon */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
+            {/* UPDATED: Using Wallet icon instead of previous icon */}
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <Wallet className="w-6 h-6 text-white" />
             </div>
@@ -121,21 +122,21 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
           </button>
         </div>
 
-        {/* User Profile Section */}
+        {/* User Profile Section - CHANGED: Removed Alex Johnson name */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-md">
               A
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">Alex Johnson</h3>
+              {/* REMOVED: Alex Johnson text line */}
               <p className="text-sm text-gray-500">Premium Member</p>
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - UNCHANGED */}
         <nav className="flex-1 px-4 py-6">
           <div className="space-y-2">
             {navigationItems.map((item) => (
@@ -173,7 +174,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             ))}
           </div>
 
-          {/* Bottom Navigation */}
+          {/* Bottom Navigation - UNCHANGED */}
           <div className="mt-12 pt-6 border-t border-gray-100 space-y-2">
             {bottomItems.map((item) => (
               <Link key={item.name} href={item.href}>
@@ -199,7 +200,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
           </div>
         </nav>
 
-        {/* Bottom Card */}
+        {/* Bottom Card - UNCHANGED */}
         <div className="p-4">
           <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-4 text-white">
             <h4 className="font-semibold mb-2">Upgrade to Pro</h4>

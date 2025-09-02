@@ -1,9 +1,11 @@
+// src/app/profile/page.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { User, TrendingUp, DollarSign, Clock, Settings, Bell, Shield, CreditCard, ArrowRight, Target, Wallet, PieChart, BarChart3, RefreshCw } from 'lucide-react';
 import { formatCurrency, formatTimeAgo } from '@/utils/formatters';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import DashboardLayout from '@/components/layout/DashboardLayout'; // Add this import
 
 const ProfilePage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -166,8 +168,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header with Refresh Button */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
           <div className="flex items-start justify-between">
@@ -229,7 +231,7 @@ const ProfilePage = () => {
                 
                 <p className="text-2xl font-bold text-gray-900 mb-1">
                   {stat.loading ? '---' : (
-                    typeof stat.value === 'number' && stat.label.includes('Income' || 'Savings') 
+                    typeof stat.value === 'number' && (stat.label.includes('Income') || stat.label.includes('Savings'))
                       ? formatCurrency(stat.value)
                       : stat.value.toString()
                   )}
@@ -367,7 +369,7 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
